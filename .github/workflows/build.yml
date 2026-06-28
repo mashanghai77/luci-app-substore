@@ -7,25 +7,45 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip python3
+
+      - name: Download OpenWrt SDK
+        run: |
+          wget -q "https://downloads.openwrt.org/releases/23.05.3/targets/x86/64/openwrt-sdk-23.05.3-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz" -O sdk.tar.xz
+          tar -xf sdk.tar.xz
+          mv openwrt-sdk-* openwrt-sdk
+
+      - name: Setup feeds
+        run: |
+          cd openwrt-sdk
+          ./scripts/feeds update luci
+          ./scripts/feeds install -a -p luci
+
+      - name: Copy package
+        run: |
+          mkdir -p openwrt-sdk/package/luci-app-substore
+          cp -r ./ openwrt-sdk/package/luci-app-substore/
+          ls openwrt-sdk/package/luci-app-substore/
 
       - name: Build
-        uses: openwrt/gh-action-sdk@v7
-        env:
-          ARCH: x86_64-23.05
-          FEEDNAME: luci_app_substore
-          PACKAGES: luci-app-substore
-          NO_REFRESH_CHECK: true
+        run: |
+          cd openwrt-sdk
+          make defconfig
+          make package/luci-app-substore/compile V=s 2>&1 | tail -50
 
       - name: Collect IPK
         run: |
           mkdir -p output
-          find bin/packages/ -name "luci-app-substore*.ipk" -exec cp {} output/ \;
+          find openwrt-sdk/bin -name "luci-app-substore*.ipk" -exec cp {} output/ \;
           ls -lh output/
 
       - name: Upload artifact
