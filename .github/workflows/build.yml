@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          path: src
 
       - name: Install dependencies
         run: |
@@ -32,8 +34,7 @@ jobs:
 
       - name: Copy package
         run: |
-          mkdir -p openwrt-sdk/package/luci-app-substore
-          cp -r ./ openwrt-sdk/package/luci-app-substore/
+          cp -r src openwrt-sdk/package/luci-app-substore
           ls openwrt-sdk/package/luci-app-substore/
 
       - name: Build
