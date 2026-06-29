@@ -22,8 +22,8 @@ start_service() {
 
 	local frontend_port=$(uci_get frontend_port 3001)
 	local frontend_host=$(uci_get frontend_host ::)
-	local backend_merge=$(uci_get backend_merge 1)
 	local frontend_backend_path=$(uci_get frontend_backend_path /sub-store-api)
+	local backend_prefix=$(uci_get backend_prefix "")
 	local backend_sync_cron=$(uci_get backend_sync_cron "")
 	local push_service=$(uci_get push_service "")
 	local cors_origins=$(uci_get cors_allowed_origins "*")
@@ -33,14 +33,11 @@ start_service() {
 	local backend_upload_cron=$(uci_get backend_upload_cron "")
 	local backend_download_cron=$(uci_get backend_download_cron "")
 	local produce_cron=$(uci_get produce_cron "")
-	local mmdb_country_path=$(uci_get mmdb_country_path "")
-	local mmdb_asn_path=$(uci_get mmdb_asn_path "")
-	local mmdb_cron=$(uci_get mmdb_cron "")
 	local data_url=$(uci_get data_url "")
 	local data_url_post=$(uci_get data_url_post "")
 	local custom_name=$(uci_get backend_custom_name "OpenWrt")
 	local custom_icon=$(uci_get backend_custom_icon "")
-	local http_meta_port=$(uci_get http_meta_port 9876)
+	local x_powered_by=$(uci_get x_powered_by "")
 
 	procd_open_instance
 	procd_set_param command "$PROG" "$BUNDLE"
@@ -48,8 +45,9 @@ start_service() {
 	procd_set_param stdout 1
 	procd_set_param stderr 1
 
-	procd_set_param env SUB_STORE_DATA_BASE_PATH="$data_dir" SUB_STORE_BACKEND_API_PORT="$frontend_port" SUB_STORE_BACKEND_API_HOST="$frontend_host" SUB_STORE_FRONTEND_BACKEND_PATH="$frontend_backend_path" SUB_STORE_FRONTEND_PATH=/www/sub-store/dist PORT="$http_meta_port" SUB_STORE_BACKEND_MERGE=true
+	procd_set_param env SUB_STORE_DATA_BASE_PATH="$data_dir" SUB_STORE_BACKEND_API_PORT="$frontend_port" SUB_STORE_BACKEND_API_HOST="$frontend_host" SUB_STORE_FRONTEND_BACKEND_PATH="$frontend_backend_path" SUB_STORE_FRONTEND_PATH=/www/sub-store/dist SUB_STORE_BACKEND_MERGE=true
 
+	[ -n "$backend_prefix" ] && procd_append_param env SUB_STORE_BACKEND_PREFIX="$backend_prefix"
 	[ -n "$backend_sync_cron" ] && procd_append_param env SUB_STORE_BACKEND_SYNC_CRON="$backend_sync_cron"
 	[ -n "$push_service" ] && procd_append_param env SUB_STORE_PUSH_SERVICE="$push_service"
 	[ -n "$cors_origins" ] && procd_append_param env SUB_STORE_CORS_ALLOWED_ORIGINS="$cors_origins"
@@ -59,13 +57,11 @@ start_service() {
 	[ -n "$backend_upload_cron" ] && procd_append_param env SUB_STORE_BACKEND_UPLOAD_CRON="$backend_upload_cron"
 	[ -n "$backend_download_cron" ] && procd_append_param env SUB_STORE_BACKEND_DOWNLOAD_CRON="$backend_download_cron"
 	[ -n "$produce_cron" ] && procd_append_param env SUB_STORE_PRODUCE_CRON="$produce_cron"
-	[ -n "$mmdb_country_path" ] && procd_append_param env SUB_STORE_MMDB_COUNTRY_PATH="$mmdb_country_path"
-	[ -n "$mmdb_asn_path" ] && procd_append_param env SUB_STORE_MMDB_ASN_PATH="$mmdb_asn_path"
-	[ -n "$mmdb_cron" ] && procd_append_param env SUB_STORE_MMDB_CRON="$mmdb_cron"
 	[ -n "$data_url" ] && procd_append_param env SUB_STORE_DATA_URL="$data_url"
 	[ -n "$data_url_post" ] && procd_append_param env SUB_STORE_DATA_URL_POST="$data_url_post"
 	[ -n "$custom_name" ] && procd_append_param env SUB_STORE_BACKEND_CUSTOM_NAME="$custom_name"
 	[ -n "$custom_icon" ] && procd_append_param env SUB_STORE_BACKEND_CUSTOM_ICON="$custom_icon"
+	[ -n "$x_powered_by" ] && procd_append_param env SUB_STORE_X_POWERED_BY="$x_powered_by"
 
 	procd_close_instance
 }
