@@ -118,8 +118,8 @@ return view.extend({
 		o.datatype = 'port';
 
 		o = s.option(form.Value, 'frontend_host', _('Listen Address'));
-		o.default = '0.0.0.0';
-		o.placeholder = '0.0.0.0';
+		o.default = '::';
+		o.placeholder = '::';
 
 		o = s.option(form.Value, 'frontend_backend_path', _('Backend URL Prefix'), _('Used as API path. Avoid special characters'));
 		o.default = '/sub-store-api';
