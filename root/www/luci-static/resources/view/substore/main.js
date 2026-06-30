@@ -35,6 +35,22 @@ function getServiceStatus() {
 	});
 }
 
+// 调用固定路径脚本，严格校验：必须 code===0 且 stdout 最后一行是 OK，否则一律视为失败
+function runUpdateScript(scriptPath) {
+	return callRunCmd(scriptPath, []).then(function(res) {
+		var stdout = (res && res.stdout) ? res.stdout.trim() : '';
+		var stderr = (res && res.stderr) ? res.stderr.trim() : '';
+
+		if (!res || res.code !== 0) {
+			throw new Error(stderr || stdout || ('脚本执行失败（退出码 ' + (res ? res.code : '未知') + '）'));
+		}
+		if (stdout !== 'OK') {
+			throw new Error(stderr || stdout || '脚本未返回预期结果');
+		}
+		return true;
+	});
+}
+
 return view.extend({
 	load: function() {
 		return Promise.all([
@@ -154,18 +170,15 @@ return view.extend({
 			if (btnUpdateBackend) {
 				btnUpdateBackend.addEventListener('click', function() {
 					btnUpdateBackend.disabled = true;
-					updateStatus.textContent = '正在下载后端...';
-					callRunCmd('wget', ['-q', '-O', '/usr/libexec/substore/sub-store.bundle.js',
-						'https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store.bundle.js'
-					]).then(function() {
-						updateStatus.textContent = '正在重启...';
-						return callInitAction('substore', 'restart');
-					}).then(function() {
+					updateStatus.style.color = '#666';
+					updateStatus.textContent = '正在更新后端...';
+
+					runUpdateScript('/usr/libexec/substore/update-backend.sh').then(function() {
 						updateStatus.style.color = '#2ecc71';
-						updateStatus.textContent = '后端已更新并重启。';
-					}).catch(function() {
+						updateStatus.textContent = '后端已更新并重启成功。';
+					}).catch(function(err) {
 						updateStatus.style.color = '#e74c3c';
-						updateStatus.textContent = '后端更新失败。';
+						updateStatus.textContent = '后端更新失败：' + (err && err.message ? err.message : '未知错误');
 					}).finally(function() {
 						btnUpdateBackend.disabled = false;
 					});
@@ -177,18 +190,15 @@ return view.extend({
 			if (btnUpdateFrontend) {
 				btnUpdateFrontend.addEventListener('click', function() {
 					btnUpdateFrontend.disabled = true;
-					updateStatus.textContent = '正在下载前端...';
-					callRunCmd('wget', ['-q', '-O', '/tmp/dist.zip',
-						'https://github.com/sub-store-org/Sub-Store-Front-End/releases/latest/download/dist.zip'
-					]).then(function() {
-						updateStatus.textContent = '正在解压...';
-						return callRunCmd('sh', ['-c', 'rm -rf /www/sub-store/dist && unzip -q /tmp/dist.zip -d /www/sub-store && rm -f /tmp/dist.zip']);
-					}).then(function() {
+					updateStatus.style.color = '#666';
+					updateStatus.textContent = '正在更新前端...';
+
+					runUpdateScript('/usr/libexec/substore/update-frontend.sh').then(function() {
 						updateStatus.style.color = '#2ecc71';
 						updateStatus.textContent = '前端已更新。';
-					}).catch(function() {
+					}).catch(function(err) {
 						updateStatus.style.color = '#e74c3c';
-						updateStatus.textContent = '前端更新失败。';
+						updateStatus.textContent = '前端更新失败：' + (err && err.message ? err.message : '未知错误');
 					}).finally(function() {
 						btnUpdateFrontend.disabled = false;
 					});
