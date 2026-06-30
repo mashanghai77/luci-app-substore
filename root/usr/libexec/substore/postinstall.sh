@@ -1,11 +1,14 @@
 #!/bin/sh
-# Post-install script for luci-app-substore
 
-# 初始化数据目录
 mkdir -p /etc/sub-store
 
-# 设置init.d权限并启用
 chmod +x /etc/init.d/substore
 /etc/init.d/substore enable
 
 echo "Sub-Store installed. Enable it in Services > Sub-Store."
+
+rm -f /tmp/luci-indexcache* >/dev/null 2>&1
+rm -rf /tmp/luci-modulecache/* >/dev/null 2>&1
+/etc/init.d/rpcd restart >/dev/null 2>&1
+
+exit 0
