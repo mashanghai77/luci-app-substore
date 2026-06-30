@@ -19,6 +19,8 @@ define Package/luci-app-substore/install
 	$(INSTALL_DATA) ./root/etc/config/substore $(1)/etc/config/substore
 	$(INSTALL_DIR) $(1)/usr/libexec/substore
 	$(INSTALL_BIN) ./root/usr/libexec/substore/postinstall.sh $(1)/usr/libexec/substore/postinstall.sh
+	$(INSTALL_BIN) ./root/usr/libexec/substore/update-backend.sh $(1)/usr/libexec/substore/update-backend.sh
+	$(INSTALL_BIN) ./root/usr/libexec/substore/update-frontend.sh $(1)/usr/libexec/substore/update-frontend.sh
 	$(INSTALL_BIN) ./root/usr/libexec/substore/sub-store.bundle.js $(1)/usr/libexec/substore/sub-store.bundle.js
 	$(INSTALL_DIR) $(1)/usr/share/luci/menu.d
 	$(INSTALL_DATA) ./root/usr/share/luci/menu.d/luci-app-substore.json $(1)/usr/share/luci/menu.d/luci-app-substore.json
