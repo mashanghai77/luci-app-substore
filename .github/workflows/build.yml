@@ -16,7 +16,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip python3
+          # 这里末尾加上了 zstd 依赖，用于解压新版 SDK
+          sudo apt-get install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip python3 zstd
 
       # ===================== IPK SDK =====================
       - name: Download OpenWrt SDK (IPK)
@@ -28,13 +29,18 @@ jobs:
       # ===================== APK SDK (动态获取，防止404) =====================
       - name: Download OpenWrt SDK (APK)
         run: |
-          # 动态从官方 sha256sums 文件中提取当前最新的 SDK 文件名
-          SDK_FILE=$(wget -qO- https://downloads.openwrt.org/snapshots/targets/x86/64/sha256sums | grep -o "openwrt-sdk-.*\.tar\.xz" | head -n 1)
-          wget -q "https://downloads.openwrt.org/snapshots/targets/x86/64/$SDK_FILE" -O sdk-apk.tar.xz
-          tar -xf sdk-apk.tar.xz
-          mv openwrt-sdk-* openwrt-sdk-apk
+          # 1. 动态从官方提取当前最新的 .tar.zst 格式 SDK 文件名
+          SDK_FILE=$(wget -qO- https://downloads.openwrt.org/snapshots/targets/x86/64/sha256sums | grep -o "openwrt-sdk-.*\.tar\.zst" | head -n 1)
+          
+          # 2. 下载并解压
+          wget -q "https://downloads.openwrt.org/snapshots/targets/x86/64/$SDK_FILE" -O sdk-apk.tar.zst
+          tar -xf sdk-apk.tar.zst
+          
+          # 3. 精准重命名文件夹，绝不搞错
+          FOLDER_NAME="${SDK_FILE%.tar.zst}"
+          mv "$FOLDER_NAME" openwrt-sdk-apk
 
-      # ===================== feeds (全面更新防止依赖缺失) =====================
+      # ===================== feeds =====================
       - name: Setup feeds (IPK)
         run: |
           cd openwrt-sdk
@@ -88,9 +94,10 @@ jobs:
       - name: Collect artifacts
         run: |
           mkdir -p output
-          # 这里的 find 路径能准确扫到编译出的 ipk 和 apk
+
           find openwrt-sdk/bin/ -name "*.ipk" -exec cp {} output/ \;
           find openwrt-sdk-apk/bin/ -name "*.apk" -exec cp {} output/ \;
+
           ls -lh output/
 
       - name: Upload artifact
