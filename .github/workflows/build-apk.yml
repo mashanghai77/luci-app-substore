@@ -1,0 +1,85 @@
+name: luci-app-substore-APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip python3 zstd
+
+      - name: Download OpenWrt SDK (APK)
+        run: |
+          # 自动获取最新的快照 SDK 文件名（动态兼容 .tar.zst 或 .tar.xz）
+          SDK_FILE=$(wget -qO- https://downloads.openwrt.org/snapshots/targets/x86/64/sha256sums | grep -o "openwrt-sdk-.*\.tar\.[a-z0-9]*" | head -n 1)
+          wget -q "https://downloads.openwrt.org/snapshots/targets/x86/64/$SDK_FILE" -O sdk-apk.archive
+          
+          # 智能识别解压，防止官方临时更换压缩格式导致报错
+          if [[ "$SDK_FILE" == *.zst ]]; then
+            zstd -d sdk-apk.archive -o sdk-apk.tar && tar -xf sdk-apk.tar
+            FOLDER_NAME="${SDK_FILE%.tar.zst}"
+          else
+            tar -xf sdk-apk.archive
+            FOLDER_NAME="${SDK_FILE%.tar.xz}"
+          fi
+          mv "$FOLDER_NAME" openwrt-sdk-apk
+
+      - name: Setup feeds (APK)
+        run: |
+          cd openwrt-sdk-apk
+          ./scripts/feeds update luci
+          ./scripts/feeds install -a -p luci
+
+      - name: Download Sub-Store backend and frontend
+        run: |
+          mkdir -p src/root/usr/libexec/substore
+          mkdir -p src/root/www/sub-store
+
+          wget -q -O src/root/usr/libexec/substore/sub-store.bundle.js \
+            https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store.bundle.js
+
+          wget -q -O /tmp/dist.zip \
+            https://github.com/sub-store-org/Sub-Store-Front-End/releases/latest/download/dist.zip
+
+          unzip -q /tmp/dist.zip -d src/root/www/sub-store
+
+      - name: Copy package (APK)
+        run: |
+          cp -r src openwrt-sdk-apk/package/luci-app-substore
+
+      - name: Build APK
+        run: |
+          cd openwrt-sdk-apk
+          make defconfig
+          make package/luci-app-substore/compile V=s
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p output
+          find openwrt-sdk-apk/bin/ -name "luci-app-substore*.apk" -exec cp {} output/ \;
+          ls -lh output/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luci-app-substore-apk-file
+          path: output/*
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.apk.${{ github.run_number }}
+          name: luci-app-substore-APK
+          files: output/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
