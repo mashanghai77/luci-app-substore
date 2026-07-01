@@ -81,14 +81,11 @@ jobs:
         run: |
           mkdir -p output
 
-          find openwrt-sdk/bin/ -name "*.ipk" -exec cp {} output/ \;
-          find openwrt-sdk-apk/bin/ -name "*.apk" -exec cp {} output/ \;
+          find openwrt-sdk/bin/ -name "luci-app-substore*.ipk" -exec cp {} output/ \;
+          find openwrt-sdk-apk/bin/ -name "luci-app-substore*.apk" -exec cp {} output/ \;
 
           ls -lh output/
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
           name: luci-app-substore-all
           path: output/*
 
