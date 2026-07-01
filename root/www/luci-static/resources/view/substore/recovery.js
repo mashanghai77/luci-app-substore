@@ -16,7 +16,7 @@ return view.extend({
 		s = m.section(form.NamedSection, 'config', 'substore', _('启动数据恢复'));
 		s.anonymous = true;
 
-		o = s.option(form.Value, 'data_url', _('远程数据URL'), _('每次启动时从此地址拉取并恢复数据，支持 Gist Raw 链接'));
+		o = s.option(form.Value, 'data_url', _('远程数据URL'), _('启动时从此地址拉取并恢复数据，支持 Gist Raw 链接'));
 		o.placeholder = 'https://gist.githubusercontent.com/user/id/raw/Sub-Store#noCache';
 
 		o = s.option(form.Value, 'data_url_post', _('拉取后执行'), _('拉取数据后执行的 JS 表达式，例如设置 Gist Token'));
