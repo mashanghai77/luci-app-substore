@@ -20,7 +20,7 @@ return view.extend({
 		o = s.option(form.Value, 'backend_custom_icon', _('自定义图标URL'), _('显示在前端界面上的后端图标'));
 		o.placeholder = 'https://example.com/icon.png';
 
-		o = s.option(form.Value, 'x_powered_by', _('X-Powered-By 响应头'), _('自定义 HTTP 响应头中的 X-Powered-By 字段，留空则使用默认值'));
+		o = s.option(form.Value, 'x_powered_by', _('X-Powered-By 响应头'), _('自定义 HTTP 响应头中的 X-Powered-By 字段'));
 		o.placeholder = 'Express';
 
 		o = s.option(form.Value, 'cors_allowed_origins', _('CORS 允许来源'), _('允许访问后端 API 的浏览器来源，多个用逗号分隔，* 表示允许所有'));
