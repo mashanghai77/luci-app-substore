@@ -1,4 +1,4 @@
-name: luci-app-substore
+name: luci-app-substore-IPK
 
 on:
   workflow_dispatch:
@@ -24,23 +24,9 @@ jobs:
           tar -xf sdk.tar.xz
           mv openwrt-sdk-* openwrt-sdk
 
-      - name: Download OpenWrt SDK (APK)
-        run: |
-          SDK_FILE=$(wget -qO- https://downloads.openwrt.org/snapshots/targets/x86/64/sha256sums | grep -o "openwrt-sdk-.*\.tar\.zst" | head -n 1)
-          wget -q "https://downloads.openwrt.org/snapshots/targets/x86/64/$SDK_FILE" -O sdk-apk.tar.zst
-          tar -xf sdk-apk.tar.zst
-          FOLDER_NAME="${SDK_FILE%.tar.zst}"
-          mv "$FOLDER_NAME" openwrt-sdk-apk
-
       - name: Setup feeds (IPK)
         run: |
           cd openwrt-sdk
-          ./scripts/feeds update luci
-          ./scripts/feeds install -a -p luci
-
-      - name: Setup feeds (APK)
-        run: |
-          cd openwrt-sdk-apk
           ./scripts/feeds update luci
           ./scripts/feeds install -a -p luci
 
@@ -61,39 +47,29 @@ jobs:
         run: |
           cp -r src openwrt-sdk/package/luci-app-substore
 
-      - name: Copy package (APK)
-        run: |
-          cp -r src openwrt-sdk-apk/package/luci-app-substore
-
       - name: Build IPK
         run: |
           cd openwrt-sdk
           make defconfig
           make package/luci-app-substore/compile V=s
 
-      - name: Build APK
-        run: |
-          cd openwrt-sdk-apk
-          make defconfig
-          make package/luci-app-substore/compile V=s
-
       - name: Collect artifacts
         run: |
           mkdir -p output
-
           find openwrt-sdk/bin/ -name "luci-app-substore*.ipk" -exec cp {} output/ \;
-          find openwrt-sdk-apk/bin/ -name "luci-app-substore*.apk" -exec cp {} output/ \;
-
           ls -lh output/
 
-          name: luci-app-substore-all
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luci-app-substore-ipk-file
           path: output/*
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: luci-app-substore
+          tag_name: v1.0.ipk.${{ github.run_number }}
+          name: luci-app-substore-IPK
           files: output/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
