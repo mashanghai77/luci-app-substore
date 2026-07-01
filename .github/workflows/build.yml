@@ -16,44 +16,34 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          # 这里末尾加上了 zstd 依赖，用于解压新版 SDK
           sudo apt-get install -y build-essential libncurses5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip python3 zstd
 
-      # ===================== IPK SDK =====================
       - name: Download OpenWrt SDK (IPK)
         run: |
           wget -q "https://downloads.openwrt.org/releases/23.05.3/targets/x86/64/openwrt-sdk-23.05.3-x86-64_gcc-12.3.0_musl.Linux-x86_64.tar.xz" -O sdk.tar.xz
           tar -xf sdk.tar.xz
           mv openwrt-sdk-* openwrt-sdk
 
-      # ===================== APK SDK (动态获取，防止404) =====================
       - name: Download OpenWrt SDK (APK)
         run: |
-          # 1. 动态从官方提取当前最新的 .tar.zst 格式 SDK 文件名
           SDK_FILE=$(wget -qO- https://downloads.openwrt.org/snapshots/targets/x86/64/sha256sums | grep -o "openwrt-sdk-.*\.tar\.zst" | head -n 1)
-          
-          # 2. 下载并解压
           wget -q "https://downloads.openwrt.org/snapshots/targets/x86/64/$SDK_FILE" -O sdk-apk.tar.zst
           tar -xf sdk-apk.tar.zst
-          
-          # 3. 精准重命名文件夹，绝不搞错
           FOLDER_NAME="${SDK_FILE%.tar.zst}"
           mv "$FOLDER_NAME" openwrt-sdk-apk
 
-      # ===================== feeds =====================
       - name: Setup feeds (IPK)
         run: |
           cd openwrt-sdk
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
+          ./scripts/feeds update luci
+          ./scripts/feeds install -a -p luci
 
       - name: Setup feeds (APK)
         run: |
           cd openwrt-sdk-apk
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
+          ./scripts/feeds update luci
+          ./scripts/feeds install -a -p luci
 
-      # ===================== 下载 SubStore =====================
       - name: Download Sub-Store backend and frontend
         run: |
           mkdir -p src/root/usr/libexec/substore
@@ -67,7 +57,6 @@ jobs:
 
           unzip -q /tmp/dist.zip -d src/root/www/sub-store
 
-      # ===================== Copy package =====================
       - name: Copy package (IPK)
         run: |
           cp -r src openwrt-sdk/package/luci-app-substore
@@ -76,21 +65,18 @@ jobs:
         run: |
           cp -r src openwrt-sdk-apk/package/luci-app-substore
 
-      # ===================== Build IPK =====================
       - name: Build IPK
         run: |
           cd openwrt-sdk
           make defconfig
           make package/luci-app-substore/compile V=s
 
-      # ===================== Build APK =====================
       - name: Build APK
         run: |
           cd openwrt-sdk-apk
           make defconfig
           make package/luci-app-substore/compile V=s
 
-      # ===================== Collect =====================
       - name: Collect artifacts
         run: |
           mkdir -p output
